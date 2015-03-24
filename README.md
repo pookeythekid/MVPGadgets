@@ -1,6 +1,8 @@
 MVP Gadgets
 ------------
-## Current Developers:
+An enhanced hub gadgets, morph, wardrobe, and effects plugin for Spigot servers.
+
+### Current Developers:
 [pookeythekid](https://github.com/pookeythekid)
 
 [TGRHavoc](https://github.com/TGRHavoc)
@@ -12,7 +14,7 @@ MVP Gadgets
 [TheFreakLord](http://github.com/TheFreakLord)
 
 
-## Features:
+### Features:
 
 1. Personalized Chat Configuration (i.e. The ability to change response messages when equipping, un-equipping, and purchasing gadgets.) **DONE** [(See #21)](pull/21/)
 2. GUI Menu Configuration (i.e. The ability to change the names of the items in the GUI.) **DONE** [(See #21)](pull/21/)
@@ -33,4 +35,6 @@ MVP Gadgets
   1. Normal Horse, (RightClick: The horse will despawn and an explosion of leather will occur.) - **DONE** [(See #21)](pull/21/)
   2. Skeleton Horse, (RightClick: The horse will despawn and an explosion of bone will occur.) - **DONE** [(See #21)](pull/21/)
   3. Zombie Horse, (RightClick: The horse will despawn and an explosion of rotten flesh will occur.) - **DONE** [(See #21)](pull/21/)
+11. Vault intergration **DONE** [(See #26)](pull/26)
+12. Customizable description for the gadgets inside the GUI. **DONE** [(See #26)](pull/26)
 

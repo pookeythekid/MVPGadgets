@@ -12,10 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.pookeythekid.MobCannon.MobCannon;
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.permission.Permission;
 
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import ovh.tgrhavoc.mvpgadgets.events.GadgetHandler;
@@ -24,14 +27,28 @@ import ovh.tgrhavoc.mvpgadgets.gadgets.guigadget.GUIGadget;
 import ovh.tgrhavoc.mvpgadgets.gadgets.guigadget.GUIGadgetListener;
 import ovh.tgrhavoc.mvpgadgets.gadgets.horse.HorseGadget;
 import ovh.tgrhavoc.mvpgadgets.gadgets.horse.HorseListener;
+import ovh.tgrhavoc.mvpgadgets.gadgets.mobcannon.MobCannonGadget;
+import ovh.tgrhavoc.mvpgadgets.gadgets.paintballgun.PaintballGunGadget;
+import ovh.tgrhavoc.mvpgadgets.gadgets.paintballgun.PaintballListener;
 import ovh.tgrhavoc.mvpvpgadgets.tests.JarUtil;
+import ovh.tgrhavoc.utils.VaultUtil;
 
 public class MVPGadgets extends JavaPlugin {
 	
 	static List<Gadget> availableGadgets = new ArrayList<Gadget>();
+	private YamlConfiguration messages;
+	private MobCannon mobCannon;
+	private PaintballListener paintListener = new PaintballListener(this);
 	
-	YamlConfiguration messages;
+	private static Economy economy = null;
+	public static Permission permission = null;
 	
+	@Override
+	public void onDisable(){
+		paintListener.disable();
+	}
+	
+	@Override
 	public void onEnable(){
 		saveDefaultConfig();
 		
@@ -41,12 +58,15 @@ public class MVPGadgets extends JavaPlugin {
 			e.printStackTrace();
 		}
 		
+		if (getConfig().getBoolean("vault"))
+			initVault();
+		
 		getServer().getPluginManager().registerEvents(new GadgetHandler(this), this);
 		
 		registerGadgets();
 		registerGadetEvents();
 		
-		MobCannon mobCannon = new MobCannon(this, null);
+		
 		mobCannon.reloadCannon();
 		getCommand("mobcannon").setExecutor(mobCannon);
 		getCommand("mobcannonreload").setExecutor(mobCannon);
@@ -56,16 +76,26 @@ public class MVPGadgets extends JavaPlugin {
 	}
 	
 	private void registerGadgets() {
-		addGadget(new HorseGadget(this));
+		mobCannon = new MobCannon(this, null);
 		
+		addGadget(new HorseGadget(this));
+		addGadget(new MobCannonGadget(this));
+		addGadget(new PaintballGunGadget(this));
 		
 		GUIGadget g = new GUIGadget(this);
+		GUIGadgetListener l = new GUIGadgetListener(this, g);
+		g.setListener(l);
 		addGadget(g);
-		getServer().getPluginManager().registerEvents(new GUIGadgetListener(this, g), this);
+		getServer().getPluginManager().registerEvents(l, this);
 	}
-
+	
+	public MobCannon getMobCannon(){
+		return mobCannon;
+	}
+	
 	private void registerGadetEvents() {
 		getServer().getPluginManager().registerEvents(new HorseListener(this), this);
+		getServer().getPluginManager().registerEvents(paintListener, this);
 	}
 	
 	private void initConfigs() throws IOException{
@@ -95,6 +125,14 @@ public class MVPGadgets extends JavaPlugin {
 		return messages;
 	}
 	
+	public double getGadgetPrice(Gadget gadget){
+		return getGadgetPrice(gadget.getGadgetName());
+	}
+	
+	public double getGadgetPrice(String gadgetName){
+		return getConfig().getDouble("Gadget_Prices." + gadgetName, 10.0d);
+	}
+	
 	public static void addGadgetStatic(Gadget g){
 		if (availableGadgets.contains(g)){
 			Bukkit.getLogger().info("Someone tried to register a gadget that already exists");
@@ -118,6 +156,45 @@ public class MVPGadgets extends JavaPlugin {
 	public String getMessageFromConfig(String messagePath){
 		return ChatColor.translateAlternateColorCodes('&', getMessages().getString(messagePath));
 	}
+	
+	//Start Vault hook
+	public boolean hookedVault(){
+		return (economy != null && permission != null);
+	}
+	public Economy getEconomy(){
+		return economy;
+	}
+	public Permission getPermission(){
+		return permission;
+	}
+	private void initVault(){
+		if (!setupEconomy())
+			System.out.println("Sorry, couldn't hook economy plugin. Maybe you don't have one installed?");
+		else
+			System.out.println("Vault economy hook successful.");
+		if(!setupPermissions())
+			System.out.println("Sorry, couldn't hook permissions plugin.");
+		else
+			System.out.println("Vault permissions hooked");
+		VaultUtil.setPlugin(this);
+	}
+	private boolean setupPermissions() {
+		RegisteredServiceProvider<Permission> permissionProvider = 
+				getServer().getServicesManager().getRegistration(net.milkbowl.vault.permission.Permission.class);
+		if (permissionProvider != null) { 
+			permission = permissionProvider.getProvider(); 
+		} 
+		return (permission != null);
+	}
+	private boolean setupEconomy(){
+		RegisteredServiceProvider<Economy> economyProvider = 
+				getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class);
+	    if (economyProvider != null) {
+	    	economy = economyProvider.getProvider();
+	    }
+	    return (economy != null);
+    }
+	//End vault hook
 	
 	//Method which loads .class files found in the "mods" folder so you can dynamcaly add or remove gadgets
 	@SuppressWarnings({ "unused", "unchecked" })
